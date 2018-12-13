@@ -6,33 +6,11 @@ import scipy.io as scio
 import cv2
 import tensorflow.contrib.slim as slim
 
-gt_file = "/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/part_C_final/train_data/ground_truth"
-image_file = "/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/part_C_final/train_data/images"
-image_dir_path = "/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/part_C_final/test_data/images"
-ground_truth_dir_path = "/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/" \
-                        "part_C_final/test_data/ground_truth"
-output_path = "/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/" \
-                                         "part_C_final/test_data/crowd_train_data.tfrecords"
-
 
 def gaussian_kernel_2d(kernel_size=3, sigma=0.):
     kx = cv2.getGaussianKernel(kernel_size, sigma)
     ky = cv2.getGaussianKernel(kernel_size, sigma)
     return np.multiply(kx, np.transpose(ky))
-
-
-def data_traversal(file_dir, format):
-    result = []
-    for root, dirs, files in os.walk(file_dir):
-        for file in files:
-            if os.path.splitext(file)[1] == format:
-                result.append(os.path.join(root, file))
-    return result
-
-
-def generate_tfrecords_file(image_dir, ground_truth_dir, file_name):
-    tfrecords_filename = file_name + '.tfrecords'
-    writer = tf.python_io.TFRecordWriter(tfrecords_filename)
 
 
 def generate_density_map(gaussian_radius, gt_data, N, M):
@@ -163,11 +141,11 @@ def scale_aggregation_network(features, labels, mode, params):
         density_map_estimator = slim.\
             conv2d(density_map_estimator, 1, [1, 1], 1, "SAME", normalizer_fn=None, normalizer_params=None)
 # NHWC
-        crowd_counting = tf.reduce_sum(density_map_estimator, reduction_indices=[1, 2, 3], name="crowd_counting")
+        crowd_counting_estimated = tf.reduce_sum(density_map_estimator, reduction_indices=[1, 2, 3], name="crowd_counting")
         ground_truth_counting = tf.reduce_sum(labels, reduction_indices=[1, 2, 3])
         density_map = density_map_estimator
         predictions = {
-            'crowd_counting': crowd_counting,
+            'crowd_counting': crowd_counting_estimated,
             'density_map': density_map
         }
 
@@ -191,77 +169,43 @@ def scale_aggregation_network(features, labels, mode, params):
             return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
 
         eval_metric_ops = {
-            'MAE': tf.metrics.mean(tf.abs(tf.subtract(crowd_counting, ground_truth_counting)), name="MAE"),
-            'MSE': tf.metrics.root_mean_squared_error(ground_truth_counting, predictions=crowd_counting, name="MSE")
+            'MAE': tf.metrics.mean(tf.abs(tf.subtract(crowd_counting_estimated, ground_truth_counting)), name="MAE"),
+            'MSE': tf.metrics.root_mean_squared_error(ground_truth_counting, predictions=crowd_counting_estimated, name="MSE")
         }
         return tf.estimator.EstimatorSpec(mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
 
 
-def read_tf_record(file_path):
-    data_file_queue = tf.train.string_input_producer([file_path])
-    reader = tf.TFRecordReader()
-    _, serialized_example = reader.read(data_file_queue)
-    features = tf.parse_single_example(
-            serialized_example, features={
-                "density_map_gt": tf.FixedLenFeature([], dtype=tf.string),
-                'img_raw': tf.FixedLenFeature([], dtype=tf.string),
-                "HWC": tf.FixedLenFeature([3], dtype=tf.int64)
-            }
-        )
-    image = tf.decode_raw(features['img_raw'], tf.uint8)
-    HWC = tf.cast(features["HWC"], tf.int32)
-    ground_truth = tf.decode_raw(features['density_map_gt'], tf.float64)
-    image = tf.reshape(image, [HWC[0], HWC[1], HWC[2]])
-    ground_truth = tf.reshape(ground_truth, [HWC[0], HWC[1], 1])
-    return [image, ground_truth, HWC]
-
-
 if __name__ == "__main__":
+    file = open("/home/zzn/SANet_implementation-master/result_A_12.13.txt", "w")
     with tf.Session() as sess:
-        image_train = np.load("/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/"
-                              "part_C_final/train_data/images.npy")
-        gt_train = np.load("/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/"
-                           "part_C_final/train_data/gt.npy")
-        image_eval = np.load("/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/"
-                             "part_C_final/test_data/images.npy")
-        gt_eval = np.load("/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset/"
-                          "part_C_final/test_data/gt.npy")
+        image_train = np.load("/media/zzn/922E52FA2E52D737/SANet/part_A_final/train_data/images.npy")
+        gt_train = np.load("/media/zzn/922E52FA2E52D737/SANet/part_A_final/train_data/gt.npy")
+        image_eval = np.load("/media/zzn/922E52FA2E52D737/SANet/part_A_final/test_data/images.npy")
+        gt_eval = np.load("/media/zzn/922E52FA2E52D737/SANet/part_A_final/test_data/gt.npy")
         estimator = tf.estimator.Estimator(model_fn=scale_aggregation_network,
-                                           model_dir="/Users/elrond/Documents/ShanghaiTech_Crowd_Counting_Dataset"
-                                                     "/part_C_final/scale_aggregation_model")
-        # tensors_to_log = {'MAE': "MAE", 'MSE': "MSE"}
-        # logging_hook = tf.train.LoggingTensorHook(
-        #     tensors=tensors_to_log, every_n_iter=1)
-
-        tensors_to_log = {'crowd_counting': "crowd_counting"}
-        logging_hook = tf.train.LoggingTensorHook(
-            tensors=tensors_to_log, every_n_iter=1)
-
-        train_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x=image_train,
-            y=gt_train,
-            batch_size=1,
-            num_epochs=1,
-            shuffle=True
-        )
-        estimator.train(input_fn=train_input_fn, hooks=[logging_hook])
-
-        print("train_completed")
-        eval_input_fn = tf.estimator.inputs.numpy_input_fn(
-            x=image_eval,
-            y=gt_eval,
-            batch_size=1,
-            num_epochs=1,
-            shuffle=False
-        )
-        eval_result = estimator.evaluate(input_fn=eval_input_fn)
-        print(eval_result)
-        # predict_input_fn = tf.estimator.inputs.numpy_input_fn(
-        #     x={'x': test_data},
-        #     num_epochs=1,
-        #     shuffle=False
-        # )
-        # estimator.predict(input_fn=predict_input_fn)
-
+                                           model_dir="/media/zzn/922E52FA2E52D737/SANet/"
+                                                     "part_A_final/scale_aggregation_model")
+        for i in range(500):
+            train_input_fn = tf.estimator.inputs.numpy_input_fn(
+                x=image_train,
+                y=gt_train,
+                batch_size=1,
+                num_epochs=1,
+                shuffle=True
+            )
+            estimator.train(input_fn=train_input_fn)
+            eval_input_fn = tf.estimator.inputs.numpy_input_fn(
+                x=image_eval,
+                y=gt_eval,
+                batch_size=1,
+                num_epochs=1,
+                shuffle=False
+            )
+            eval_result = estimator.evaluate(input_fn=eval_input_fn)
+            file.write(str(eval_result))
+            file.write("\r\n")
+            print(eval_result)
+    file.close()
+    print("complete")
 
 
