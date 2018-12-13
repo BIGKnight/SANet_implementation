@@ -37,8 +37,8 @@ def make_npy(image_dir_path, ground_truth_dir_path, output_image_path, output_gt
     data_groud_truth = []
 
     for i in range(num):
-        img_path = image_dir_path + "/IMG_" + str(i + 1) + ".jpg"
-        gt_path = ground_truth_dir_path + "/GT_IMG_" + str(i + 1) + ".mat"
+        img_path = image_dir_path + "/IMG_" + str(i + 381) + ".jpg"
+        gt_path = ground_truth_dir_path + "/GT_IMG_" + str(i + 381) + ".mat"
         img = Image.open(img_path)
         height = img.size[1]
         weight = img.size[0]
@@ -61,9 +61,9 @@ def make_npy(image_dir_path, ground_truth_dir_path, output_image_path, output_gt
 
 
 if __name__ == "__main__":
-    image_dir_path = "/media/zzn/922E52FA2E52D737/SANet/part_A_final/test_data/images"
-    ground_truth_dir_path = "/media/zzn/922E52FA2E52D737/SANet/part_A_final/test_data/ground_truth"
-    output_image_path = "/media/zzn/922E52FA2E52D737/SANet/part_A_final/test_data/images.npy"
-    output_gt_path = "/media/zzn/922E52FA2E52D737/SANet/part_A_final/test_data/gt.npy"
-    make_npy(image_dir_path, ground_truth_dir_path, output_image_path, output_gt_path, 182)
+    image_dir_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/images"
+    ground_truth_dir_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/ground_truth"
+    output_image_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/images_validate.npy"
+    output_gt_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/gt_validate.npy"
+    make_npy(image_dir_path, ground_truth_dir_path, output_image_path, output_gt_path, 20)
     print("complete!")

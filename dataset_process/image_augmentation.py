@@ -77,13 +77,12 @@ def image_augmentation(
     data_image = np.array(data_image)
     np.save(output_image_path, data_image)
     np.save(output_gt_path, data_groud_truth)
-    print("complete!")
 
 
 if __name__ == "__main__":
-    image_dir_path = "/media/zzn/922E52FA2E52D737/SANet/part_A_final/train_data/images"
-    ground_truth_dir_path = "/media/zzn/922E52FA2E52D737/SANet/part_A_final/train_data/ground_truth"
-    output_image_path = "/media/zzn/922E52FA2E52D737/SANet/part_A_final/train_data/images.npy"
-    output_gt_path = "/media/zzn/922E52FA2E52D737/SANet/part_A_final/train_data/gt.npy"
-    image_augmentation(image_dir_path, ground_truth_dir_path, output_image_path, output_gt_path, 300, crop_num=4)
+    image_dir_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/images"
+    ground_truth_dir_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/ground_truth"
+    output_image_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/images_train.npy"
+    output_gt_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/gt_train.npy"
+    image_augmentation(image_dir_path, ground_truth_dir_path, output_image_path, output_gt_path, 380, crop_num=4)
     print("complete!")
