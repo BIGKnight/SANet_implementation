@@ -1,16 +1,19 @@
+# %load /home/zzn/PycharmProjects/SANet_implementation/main.py
 import tensorflow as tf
 import numpy as np
 import utils
+import sys
+import matplotlib.pyplot as plt
 import SANet_model
+
 result_output = open("/home/zzn/SANet_implementation-master/result_B_12.13.txt", "w")
-image_train_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/images_train.npy"
-gt_train_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/gt_train.npy"
-image_validate_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/images_validate.npy"
-gt_validate_path = "/media/zzn/922E52FA2E52D737/SANet/part_B_final/train_data/gt_validate.npy"
+image_train_path = "/home/zzn/part_B_final/train_data/images_train.npy"
+gt_train_path = "/home/zzn/part_B_final/train_data/gt_train.npy"
+image_validate_path = "/home/zzn/part_B_final/train_data/images_validate.npy"
+gt_validate_path = "/home/zzn/part_B_final/train_data/gt_validate.npy"
 batch_size = 1
 epoch = 300
 loss_c_weight = 0.001
-
 
 if __name__ == "__main__":
     image_train = np.load(image_train_path)
@@ -59,17 +62,34 @@ if __name__ == "__main__":
                     MAE_ = []
                     MSE_ = []
                     for k in range(len(image_validate // batch_size)):
-                        loss_eval, metric_eval = sess.run([loss, eval_metric_ops], feed_dict={x: image_validate[k:k+batch_size], y: gt_validate[k:k+batch_size]})
+                        loss_eval, metric_eval = sess.run([loss, eval_metric_ops],
+                                                          feed_dict={x: image_validate[k:k + batch_size],
+                                                                     y: gt_validate[k:k + batch_size]})
                         loss_.append(loss_eval)
                         MAE_.append(metric_eval['MAE'])
                         MSE_.append(metric_eval['MSE'])
                     loss_ = np.mean(loss_)
                     MAE_ = np.mean(MAE_)
                     RMSE = np.sqrt(np.mean(MSE_))
-                    print(loss_)
-                    print("MAE: " + str(MAE_), "MSE: " + str(RMSE), "CURRENT_BEST_VALIDATING_MAE: " + str(MAE))
+                    sys.stdout.write(
+                        'In step {}, epoch {}, with loss {}, MAE = {}, MSE = {}\r'.format(step, i + 1, loss_, MAE_,
+                                                                                          RMSE))
                     result_output.write(str(loss_) + "      " + "MAE: " + str(MAE_) + " MSE: " + str(RMSE) + "\r\n")
+                    sys.stdout.flush()
 
+                    fogure, (origin, density_gt, pred) = plt.subplots(1, 3, figsize=(20, 4))
+                    origin.imshow(image_validate[0])
+                    origin.set_title('Origin Image')
+                    density_gt.imshow(np.squeeze(gt_validate[0]), cmap=plt.cm.jet)
+                    density_gt.set_title('ground_truth')
+                    predict_den = np.squeeze(
+                        sess.run(
+                            estimated_density_map,
+                            feed_dict={x: image_validate[0:1]})
+                    )
+                    pred.imshow(predict_den, cmap=plt.cm.jet)
+                    plt.suptitle("one sample from the validate")
+                    plt.show()
                     # save model
                     if MAE > MAE_:
                         MAE = MAE_

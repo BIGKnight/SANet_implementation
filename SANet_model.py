@@ -5,7 +5,7 @@ import tensorflow.contrib.slim as slim
 def inception_arg_scope(weight_decay=4e-4, std=0.1, batch_norm_var_collection="moving_vars"):
     instance_norm_params = {
         # "decay": 0.9997,
-        "epsilon": 0.001,
+        "epsilon": 1e-6,
         "activation_fn": tf.nn.relu,
         "trainable": True,
         "variables_collections": {
@@ -65,6 +65,9 @@ def encoder_head(data_input, channel_output):
 
 def scale_aggregation_network(features):
     with slim.arg_scope(inception_arg_scope()):
+        # input instance normalization
+        features = tf.divide(features, 255)
+        features = slim.instance_norm(features, epsilon=1e-6)
         feature_map_encoder = encoder_head(features, 16)
         feature_map_encoder = slim.max_pool2d(feature_map_encoder, [2, 2], 2, "SAME", scope="max_pooling_2x2")
         feature_map_encoder = encoder_unit(feature_map_encoder, 32, 1)

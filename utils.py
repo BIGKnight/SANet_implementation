@@ -32,6 +32,39 @@ def generate_density_map(gaussian_radius, gt_data, N, M):
     return density_map
 
 
+def density_map_image_generation(image_path, gt_path):
+    R = 15
+    gaussian_kernel = gaussian_kernel_2d(R, 4)
+    gt = scio.loadmat(gt_path)['image_info']
+    gt = gt[0][0][0][0]
+    coordinate = gt[0]
+    image = cv2.imread(image_path)
+    N = image.shape[0]
+    M = image.shape[1]
+    density_map = np.zeros([N, M], dtype=float)
+    for y, x in coordinate:
+        x = round(x - 1, 0)
+        y = round(y - 1, 0)
+        flag = 0
+        for i in range(int(x - R / 2), int(x + R / 2 + 1)):
+            if i < 0 or i > (N - 1):
+                continue
+            for j in range(int(y - R / 2), int(y + R / 2 + 1)):
+                if j < 0 or j > (M - 1):
+                    continue
+                else:
+                    density_map[i][j] = density_map[i][j] + gaussian_kernel[i - int(x - R / 2) - 1][
+                        j - int(y - R / 2) - 1]
+    max_den = density_map.max()
+    den_map_iamge = np.zeros([N, M, 3], dtype=np.float)
+    for X in range(N):
+        for Y in range(M):
+            pixel = 255 * density_map[X][Y] / max_den
+            den_map_iamge[X][Y] = mp[int(pixel)] * 255
+            den_map_iamge[X][Y] = [int(ele) for ele in den_map_iamge[X][Y]]
+    return den_map_iamge
+
+
 def truncation_normal_distribution(standard_variance):
     return tf.truncated_normal_initializer(0.0, standard_variance)
 
