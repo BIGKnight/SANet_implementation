@@ -2,7 +2,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
 
-def inception_arg_scope(weight_decay=4e-4, std=0.1, batch_norm_var_collection="moving_vars"):
+def inception_arg_scope(weight_decay=4e-4, std=3, batch_norm_var_collection="moving_vars"):
     instance_norm_params = {
         # "decay": 0.9997,
         "epsilon": 1e-6,
@@ -19,12 +19,11 @@ def inception_arg_scope(weight_decay=4e-4, std=0.1, batch_norm_var_collection="m
     }
     with slim.arg_scope([slim.conv2d],
                         weights_regularizer=slim.l2_regularizer(weight_decay),
-                        weights_initializer=tf.truncated_normal_initializer(stddev=std),
-                        activation_fn=tf.nn.relu,
-                        normalizer_fn=slim.instance_norm,
-                        normalizer_params=instance_norm_params) as sc:
+                        weights_initializer=tf.glorot_uniform_initializer(),
+                        activation_fn=tf.nn.relu) as sc:
         return sc
-
+#  normalizer_fn=slim.instance_norm,
+#                         normalizer_params=instance_norm_params
 # variables_collections, output_collections, param_initializers
 
 
@@ -85,4 +84,5 @@ def scale_aggregation_network(features):
         density_map_estimator = slim.conv2d(density_map_estimator, 16, [3, 3], 1, "SAME")
     density_map_estimator = slim.conv2d(density_map_estimator, 1, [1, 1], 1, "SAME", normalizer_fn=None, normalizer_params=None)
 # NHWC
+
     return density_map_estimator
