@@ -15,6 +15,7 @@ batch_size = 1
 epoch = 300
 loss_c_weight = 0.001
 
+
 if __name__ == "__main__":
     image_train = np.load(image_train_path)
     gt_train = np.load(gt_train_path)
